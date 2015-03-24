@@ -1,5 +1,7 @@
 # pixel
 
+[![Build Status](https://travis-ci.org/hblanks/pixel.svg?branch=master)](https://travis-ci.org/hblanks/pixel)
+
 pixel is a simple server for serving tracking pixels and logging them
 to a downstream consumer. For starters, it just logs to UDP syslog
 using go's `log/syslog` package.
