@@ -1,0 +1,15 @@
+
+
+master
+======
+
+Features:
+
+    * Log listen address, syslog address, and syslog priority to stderr
+      on startup.
+
+
+0.0.1 (2015-03-24)
+==================
+
+Initial release.
