@@ -43,6 +43,8 @@ func start() error {
 	if err != nil {
 		return err
 	}
+	log.Printf("start listen=%s syslog=%s priority=%d\n",
+		listenAddress, syslogAddress, syslogPriority)
 	go server.ListenAndServe(listenAddress)
 
 	sigChannel := make(chan os.Signal)
@@ -62,7 +64,7 @@ func main() {
 
 	err := start()
 	if err != nil {
-		fmt.Printf("%v\n", err)
+		log.Printf("%v\n", err)
 		os.Exit(1)
 	}
 }
