@@ -117,7 +117,6 @@ func NewServer(syslogAddress string, syslogPriority syslog.Priority) (*Server, e
 
 	writer, err = syslog.Dial("udp", s.syslogAddress, s.syslogPriority,
 		"pixel")
-	// log.Printf("dial: %s %d", s.syslogAddress, s.syslogPriority)
 
 	if err != nil {
 		return nil, err
@@ -132,7 +131,7 @@ func NewEvent(t time.Time, r *http.Request) (event *Event, err error) {
 	err = r.ParseForm()
 	if err != nil {
 		log.Printf("Malformed query string: %s", err)
-		return
+		return nil, err
 	}
 
 	event = &Event{
