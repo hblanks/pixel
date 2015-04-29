@@ -173,8 +173,6 @@ func TestServeHTTP(t *testing.T) {
 // TestSendUdp
 //
 
-const UDPMaxBytes = 65507
-
 func extractMessage(packet string) string {
 	match := syslogRegex.FindStringSubmatch(packet)
 	if match == nil {
