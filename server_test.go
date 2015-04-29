@@ -15,15 +15,12 @@ import (
 	"time"
 )
 
-var STATIC_TIME time.Time
-var SYSLOG_REGEX *regexp.Regexp
+var (
+	staticTime  = time.Date(2015, 3, 22, 4, 31, 44, 0, time.UTC)
+	syslogRegex = regexp.MustCompile(`^<\d{3}>[^ ]+ [^ ]+ [^ ]+: (.*)\n$`)
+)
 
-const STATIC_ISO8601 = "2015-03-22T04:31:44Z"
-
-func init() {
-	SYSLOG_REGEX = regexp.MustCompile(`^<\d{3}>[^ ]+ [^ ]+ [^ ]+: (.*)\n$`)
-	STATIC_TIME = time.Date(2015, 3, 22, 4, 31, 44, 0, time.UTC)
-}
+const StaticISO8601 = "2015-03-22T04:31:44Z"
 
 func assertEqual(t *testing.T, prefix string, expected, actual interface{}) {
 	if !reflect.DeepEqual(actual, expected) {
@@ -51,10 +48,10 @@ func emptyEvent(t *testing.T, body string) (timestamp time.Time, r *http.Request
 	}
 
 	e = &Event{
-		Time:   STATIC_ISO8601,
+		Time:   StaticISO8601,
 		Params: make(map[string]string),
 	}
-	return STATIC_TIME, r, e
+	return staticTime, r, e
 }
 
 func newTestServer(t *testing.T, syslogAddress string) *Server {
@@ -119,8 +116,6 @@ var eventTests = []struct {
 }
 
 func TestNewEvent(t *testing.T) {
-	var k, v string
-	var err error
 	var r *http.Request
 	var timestamp time.Time
 	var expected *Event
@@ -135,7 +130,7 @@ func TestNewEvent(t *testing.T) {
 
 	for index, eventTest := range eventTests {
 		timestamp, r, expected = emptyEvent(t, eventTest.body)
-		for k, v = range eventTest.headers {
+		for k, v := range eventTest.headers {
 			r.Header.Set(k, v)
 		}
 		expected.IP = eventTest.IP
@@ -144,12 +139,13 @@ func TestNewEvent(t *testing.T) {
 		if eventTest.body == "" {
 			eventParams := make(map[string]string)
 			urlParams := url.Values{}
-			for k, v = range eventTest.params {
+			for k, v := range eventTest.params {
 				urlParams.Set(k, v)
 				eventParams[k] = v
 			}
 			expected.Params = eventParams
 
+			var err error
 			r.URL, err = url.Parse("http://localhost/")
 			if err != nil {
 				t.Fatal(index, err)
@@ -159,8 +155,7 @@ func TestNewEvent(t *testing.T) {
 		} else {
 			var p interface{}
 			expected.Params = &p
-			err = json.Unmarshal([]byte(eventTest.body),
-				expected.Params)
+			err := json.Unmarshal([]byte(eventTest.body), expected.Params)
 			if err != nil {
 				t.Fatal(index, err)
 			}
@@ -171,15 +166,12 @@ func TestNewEvent(t *testing.T) {
 			r.ContentLength = -1
 			check(strconv.Itoa(index))
 		}
-
 	}
 }
 
 //
 // TestServeHTTP
 //
-
-var badRequest = http.StatusText(http.StatusBadRequest) + "\n"
 
 var httpTests = []struct {
 	method       string
@@ -189,23 +181,22 @@ var httpTests = []struct {
 	responseBody string
 }{
 	// Valid requests
-	{"GET", "/", "", 200, TRANSPARENT_1_PX_GIF},
-	{"GET", "/", "a=1&b=2", 200, TRANSPARENT_1_PX_GIF},
+	{"GET", "/", "", 200, Transparent1PxGIF},
+	{"GET", "/", "a=1&b=2", 200, Transparent1PxGIF},
 	{"POST", "/", `{}`, 200, "{}"},
 	{"POST", "/", `{"a": 1, "b": "2"}`, 200, "{}"},
 
 	// Invalid requests
-	{"GET", "/", "%gh&%ij", 400, badRequest},
-	{"POST", "/", "", 400, badRequest},
-	{"POST", "/", `{"a": 1 "b": "2"}`, 400, badRequest},
+	{"GET", "/", "%gh&%ij", 400, BadRequest + "\n"},
+	{"POST", "/", "", 400, BadRequest + "\n"},
+	{"POST", "/", `{"a": 1 "b": "2"}`, 400, BadRequest + "\n"},
 	{"POST", "/",
 		`{"a": 1, "b": "paddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpaddingpadd"}`,
-		400, badRequest},
-	{"POST", "/", `{"a": 1, "b": {"a": 1}`, 400, badRequest},
+		400, BadRequest + "\n"},
+	{"POST", "/", `{"a": 1, "b": {"a": 1}`, 400, BadRequest + "\n"},
 }
 
-func serveRequest(t *testing.T, server *Server, method, path,
-	rawParams string) *httptest.ResponseRecorder {
+func serveRequest(t *testing.T, server *Server, method, path, rawParams string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	var r *http.Request
 	switch method {
@@ -226,8 +217,7 @@ func serveRequest(t *testing.T, server *Server, method, path,
 func TestServeHTTP(t *testing.T) {
 	server := newTestServer(t, "")
 	for _, httpTest := range httpTests {
-		w := serveRequest(t, server, httpTest.method, httpTest.path,
-			httpTest.rawParams)
+		w := serveRequest(t, server, httpTest.method, httpTest.path, httpTest.rawParams)
 
 		expected := httpTest.responseBody
 		actual := w.Body.String()
@@ -235,8 +225,7 @@ func TestServeHTTP(t *testing.T) {
 			t.Errorf("Expected body %q != actual %q", expected, actual)
 		}
 		if httpTest.code != w.Code {
-			t.Errorf("Expected %d status code, but got %d.",
-				httpTest.code, w.Code)
+			t.Errorf("Expected %d status code, but got %d.", httpTest.code, w.Code)
 		}
 	}
 }
@@ -245,10 +234,8 @@ func TestServeHTTP(t *testing.T) {
 // TestSendUdp
 //
 
-const UDP_MAX_BYTES = 65507
-
 func extractMessage(packet string) string {
-	match := SYSLOG_REGEX.FindStringSubmatch(packet)
+	match := syslogRegex.FindStringSubmatch(packet)
 	if match == nil {
 		return ""
 	}
@@ -264,72 +251,66 @@ var udpTests = []struct {
 	// Valid requests
 	{
 		"GET", "/", "a=1&b=2",
-		`{"t":"` + STATIC_ISO8601 + `","params":{"a":"1","b":"2"}}`,
+		`{"t":"` + StaticISO8601 + `","params":{"a":"1","b":"2"}}`,
 	},
 	{
 		"POST", "/", `{"a": 1, "b": "2"}`,
-		`{"t":"` + STATIC_ISO8601 + `","params":{"a":1,"b":"2"}}`,
+		`{"t":"` + StaticISO8601 + `","params":{"a":1,"b":"2"}}`,
 	},
 	// Invalid requests
 	{
 		"GET", "/", "%gh&%ij",
-		`{"t":"` + STATIC_ISO8601 + `",` +
+		`{"t":"` + StaticISO8601 + `",` +
 			`"error":"Malformed query string: invalid URL escape \"%gh\""}`,
 	},
 	{
 		"POST", "/", "a=1&b=2",
-		`{"t":"` + STATIC_ISO8601 + `",` +
+		`{"t":"` + StaticISO8601 + `",` +
 			`"error":"invalid character 'a' looking for beginning of value"}`,
 	},
 }
 
 func TestSendUdp(t *testing.T) {
-	var err error
-	var udpaddr *net.UDPAddr
-	var udpconn *net.UDPConn
-
-	udpaddr, err = net.ResolveUDPAddr("udp", "localhost:0")
+	udpaddr, err := net.ResolveUDPAddr("udp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	udpconn, err = net.ListenUDP("udp", udpaddr)
+	udpconn, err := net.ListenUDP("udp", udpaddr)
 	defer udpconn.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	server := newTestServer(t, udpconn.LocalAddr().String())
-	server.now = func() time.Time { return STATIC_TIME }
+	server.now = func() time.Time { return staticTime }
 
-	var numBytes int
-	messageBuf := make([]byte, UDP_MAX_BYTES)
+	messageBuf := make([]byte, UDPMaxBytes)
 
 	for _, udpTest := range udpTests {
-		serveRequest(t, server, udpTest.method, udpTest.path,
-			udpTest.rawParams)
+		serveRequest(t, server, udpTest.method, udpTest.path, udpTest.rawParams)
 		udpconn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-		numBytes, _, err = udpconn.ReadFromUDP(messageBuf)
+		numBytes, _, err := udpconn.ReadFromUDP(messageBuf)
 		if err != nil {
 			if udpTest.packet != "" {
 				t.Errorf("Failed to read packet: %v", err)
 			}
-		} else {
-			packet := string(messageBuf[:numBytes])
-			if udpTest.packet == "" {
-				t.Errorf("Expected no packet; received:\n\n    %s", packet)
-				continue
-			}
-
-			actual := extractMessage(packet)
-			if actual == "" {
-				t.Errorf("Failed to parse packet:\n\n    %s", packet)
-			}
-			if udpTest.packet != actual {
-				t.Errorf("Expected:\n\n    %s\n\nReceived:\n\n     %s",
-					udpTest.packet, actual)
-			}
+			// XXX - unlogged error on empty packet
+			continue
+		}
+		packet := string(messageBuf[:numBytes])
+		if udpTest.packet == "" {
+			t.Errorf("Expected no packet; received:\n\n    %s", packet)
+			continue
+		}
+		actual := extractMessage(packet)
+		if actual == "" {
+			t.Errorf("Failed to parse packet:\n\n    %s", packet)
+			continue
+		}
+		if udpTest.packet != actual {
+			t.Errorf("Expected:\n\n    %s\n\nReceived:\n\n     %s", udpTest.packet, actual)
 		}
 	}
 }
