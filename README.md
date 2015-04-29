@@ -16,7 +16,7 @@ To install for development, just do:
 A directory to simplify debian packaging is forthcoming.
 
 
-## Usage
+## Usage & sample requests
 
 pixel is configured from the environment. A typical invocation might
 be:
@@ -24,7 +24,18 @@ be:
     LISTEN_ADDRESS=:8080 pixel
 
 
-## Quickstart (with nginx)
+pixel serves tracks both pixel GET:
+
+    curl http://localhost:8080/trk/v1.gif?a=b&foo=c
+
+and JSON POST:
+
+    curl -d '{"a": "b", "foo": "c"}' http://localhost:8080/trk/v1
+
+HTTP requests for any path.
+
+
+## Quickstart (configured with nginx)
 
 Configure pixel to run using the supervisor / container of your choice
 (runit, upstart, daemontools, docker, etc.)

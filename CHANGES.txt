@@ -7,6 +7,9 @@ Features:
 
     * Log listen address, syslog address, and syslog priority to stderr
       on startup.
+    * Track JSON POST requests
+      (such as `curl -d '{"a": "b", "foo": "c"}' http://localhost:8080/`)
+      in addition to pixel GET requests.
 
 
 0.0.1 (2015-03-24)
