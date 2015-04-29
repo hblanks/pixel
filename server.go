@@ -25,99 +25,67 @@ type Event struct {
 	Proto     string            `json:"proto,omitempty"`
 }
 
-const ISO8601_FORMAT = "2006-01-02T15:04:05Z"
+const ISO8601Format = "2006-01-02T15:04:05Z"
 
-const TRANSPARENT_1_PX_GIF = "\x47\x49\x46\x38\x39\x61\x01\x00" +
+const Transparent1PxGIF = "\x47\x49\x46\x38\x39\x61\x01\x00" +
 	"\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00\x2c\x00\x00\x00\x00" +
 	"\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
 
-var BAD_REQUEST string
-var TRANSPARENT_1_PX_GIF_BYTES []byte
+var BadRequest = http.StatusText(http.StatusBadRequest)
 
-func init() {
-	TRANSPARENT_1_PX_GIF_BYTES = []byte(TRANSPARENT_1_PX_GIF)
-	BAD_REQUEST = http.StatusText(http.StatusBadRequest)
+var levelMap = map[string]syslog.Priority{
+	"LOG_EMERG":   syslog.LOG_EMERG,
+	"LOG_ALERT":   syslog.LOG_ALERT,
+	"LOG_CRIT":    syslog.LOG_CRIT,
+	"LOG_ERR":     syslog.LOG_ERR,
+	"LOG_WARNING": syslog.LOG_WARNING,
+	"LOG_NOTICE":  syslog.LOG_NOTICE,
+	"LOG_INFO":    syslog.LOG_INFO,
+	"LOG_DEBUG":   syslog.LOG_DEBUG,
 }
 
-func NewSyslogPriority(level string, facility string) (p syslog.Priority) {
-	switch level {
-	case "LOG_EMERG":
-		p = syslog.LOG_EMERG
-	case "LOG_ALERT":
-		p = syslog.LOG_ALERT
-	case "LOG_CRIT":
-		p = syslog.LOG_CRIT
-	case "LOG_ERR":
-		p = syslog.LOG_ERR
-	case "LOG_WARNING":
-		p = syslog.LOG_WARNING
-	case "LOG_NOTICE":
-		p = syslog.LOG_NOTICE
-	case "LOG_INFO":
-		p = syslog.LOG_INFO
-	case "LOG_DEBUG":
-		p = syslog.LOG_DEBUG
-	default:
+var facilityMap = map[string]syslog.Priority{
+	"LOG_KERN":     syslog.LOG_KERN,
+	"LOG_USER":     syslog.LOG_USER,
+	"LOG_MAIL":     syslog.LOG_MAIL,
+	"LOG_DAEMON":   syslog.LOG_DAEMON,
+	"LOG_AUTH":     syslog.LOG_AUTH,
+	"LOG_SYSLOG":   syslog.LOG_SYSLOG,
+	"LOG_LPR":      syslog.LOG_LPR,
+	"LOG_NEWS":     syslog.LOG_NEWS,
+	"LOG_UUCP":     syslog.LOG_UUCP,
+	"LOG_CRON":     syslog.LOG_CRON,
+	"LOG_AUTHPRIV": syslog.LOG_AUTHPRIV,
+	"LOG_FTP":      syslog.LOG_FTP,
+	"LOG_LOCAL0":   syslog.LOG_LOCAL0,
+	"LOG_LOCAL1":   syslog.LOG_LOCAL1,
+	"LOG_LOCAL2":   syslog.LOG_LOCAL2,
+	"LOG_LOCAL3":   syslog.LOG_LOCAL3,
+	"LOG_LOCAL4":   syslog.LOG_LOCAL4,
+	"LOG_LOCAL5":   syslog.LOG_LOCAL5,
+	"LOG_LOCAL6":   syslog.LOG_LOCAL6,
+}
+
+func NewSyslogPriority(level string, facility string) syslog.Priority {
+	p, ok := levelMap[level]
+	if !ok {
 		p = syslog.LOG_INFO
 	}
 
-	switch facility {
-	case "LOG_KERN":
-		p |= syslog.LOG_KERN
-	case "LOG_USER":
-		p |= syslog.LOG_USER
-	case "LOG_MAIL":
-		p |= syslog.LOG_MAIL
-	case "LOG_DAEMON":
-		p |= syslog.LOG_DAEMON
-	case "LOG_AUTH":
-		p |= syslog.LOG_AUTH
-	case "LOG_SYSLOG":
-		p |= syslog.LOG_SYSLOG
-	case "LOG_LPR":
-		p |= syslog.LOG_LPR
-	case "LOG_NEWS":
-		p |= syslog.LOG_NEWS
-	case "LOG_UUCP":
-		p |= syslog.LOG_UUCP
-	case "LOG_CRON":
-		p |= syslog.LOG_CRON
-	case "LOG_AUTHPRIV":
-		p |= syslog.LOG_AUTHPRIV
-	case "LOG_FTP":
-		p |= syslog.LOG_FTP
-	case "LOG_LOCAL0":
-		p |= syslog.LOG_LOCAL0
-	case "LOG_LOCAL1":
-		p |= syslog.LOG_LOCAL1
-	case "LOG_LOCAL2":
-		p |= syslog.LOG_LOCAL2
-	case "LOG_LOCAL3":
-		p |= syslog.LOG_LOCAL3
-	case "LOG_LOCAL4":
-		p |= syslog.LOG_LOCAL4
-	case "LOG_LOCAL5":
-		p |= syslog.LOG_LOCAL5
-	case "LOG_LOCAL6":
-		p |= syslog.LOG_LOCAL6
-	case "LOG_LOCAL7":
-		p |= syslog.LOG_LOCAL7
-	default:
-		p |= syslog.LOG_LOCAL7
+	f, ok := facilityMap[facility]
+	if !ok {
+		f = syslog.LOG_LOCAL7
 	}
-	return p
+
+	return p | f
 }
 
 func NewServer(syslogAddress string, syslogPriority syslog.Priority) (*Server, error) {
-	var err error
-	var writer *syslog.Writer
 	s := new(Server)
 	s.syslogAddress = syslogAddress
 	s.syslogPriority = syslogPriority
 
-	writer, err = syslog.Dial("udp", s.syslogAddress, s.syslogPriority,
-		"pixel")
-
+	writer, err := syslog.Dial("udp", s.syslogAddress, s.syslogPriority, "pixel")
 	if err != nil {
 		return nil, err
 	}
@@ -127,15 +95,15 @@ func NewServer(syslogAddress string, syslogPriority syslog.Priority) (*Server, e
 	return s, err
 }
 
-func NewEvent(t time.Time, r *http.Request) (event *Event, err error) {
-	err = r.ParseForm()
+func NewEvent(t time.Time, r *http.Request) (*Event, error) {
+	err := r.ParseForm()
 	if err != nil {
 		log.Printf("Malformed query string: %s", err)
 		return nil, err
 	}
 
-	event = &Event{
-		Time:   t.UTC().Format(ISO8601_FORMAT),
+	event := &Event{
+		Time:   t.UTC().Format(ISO8601Format),
 		Params: make(map[string]string),
 	}
 
@@ -150,21 +118,17 @@ func NewEvent(t time.Time, r *http.Request) (event *Event, err error) {
 }
 
 func (s *Server) trackPixel(w http.ResponseWriter, r *http.Request) {
-	var event *Event
-	var err error
-	var jsondata []byte
-
-	event, err = NewEvent(s.now(), r)
+	event, err := NewEvent(s.now(), r)
 	if err != nil {
 		log.Printf("%s", err)
-		http.Error(w, BAD_REQUEST, http.StatusBadRequest)
+		http.Error(w, BadRequest, http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/gif")
-	w.Write(TRANSPARENT_1_PX_GIF_BYTES)
+	w.Write([]byte(Transparent1PxGIF))
 
-	jsondata, err = json.Marshal(event)
+	jsondata, err := json.Marshal(event)
 	if err != nil {
 		log.Printf("json encode error: %s", err)
 	} else {
@@ -179,7 +143,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 
 	default:
-		http.Error(w, BAD_REQUEST, http.StatusBadRequest)
+		http.Error(w, BadRequest, http.StatusBadRequest)
 	}
 }
 

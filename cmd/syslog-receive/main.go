@@ -8,11 +8,8 @@ import (
 	"os"
 )
 
-const UDP_MAX_BYTES = 65507
-
 func usage() {
-	fmt.Fprintf(os.Stderr,
-		"Usage: %s\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s\n", os.Args[0])
 	fmt.Fprintf(os.Stderr,
 		"Binds to a UDP port and prints syslog messages to stdout.\n"+
 			"Relevant environment variables (and defaults):\n"+
@@ -23,7 +20,7 @@ func usage() {
 }
 
 func syslogReceive() error {
-	messageBuf := make([]byte, UDP_MAX_BYTES)
+	messageBuf := make([]byte, pixel.UDPMaxBytes)
 
 	listenAddress := os.Getenv("LISTEN_ADDRESS")
 	if len(listenAddress) == 0 {
@@ -42,8 +39,7 @@ func syslogReceive() error {
 	defer conn.Close()
 
 	for {
-		var numBytes int
-		numBytes, _, err = conn.ReadFromUDP(messageBuf)
+		numBytes, _, err := conn.ReadFromUDP(messageBuf)
 		if err != nil {
 			log.Printf("v\n", err)
 		}

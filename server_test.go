@@ -12,15 +12,12 @@ import (
 	"time"
 )
 
-var STATIC_TIME time.Time
-var SYSLOG_REGEX *regexp.Regexp
+var (
+	staticTime  = time.Date(2015, 3, 22, 4, 31, 44, 0, time.UTC)
+	syslogRegex = regexp.MustCompile(`^<\d{3}>[^ ]+ [^ ]+ [^ ]+: (.*)\n$`)
+)
 
-const STATIC_ISO8601 = "2015-03-22T04:31:44Z"
-
-func init() {
-	SYSLOG_REGEX = regexp.MustCompile(`^<\d{3}>[^ ]+ [^ ]+ [^ ]+: (.*)\n$`)
-	STATIC_TIME = time.Date(2015, 3, 22, 4, 31, 44, 0, time.UTC)
-}
+const StaticISO8601 = "2015-03-22T04:31:44Z"
 
 func assertEqual(t *testing.T, expected, actual interface{}) {
 	if !reflect.DeepEqual(actual, expected) {
@@ -42,10 +39,10 @@ func emptyEvent(t *testing.T) (timestamp time.Time, r *http.Request, e *Event) {
 	}
 
 	e = &Event{
-		Time:   STATIC_ISO8601,
+		Time:   StaticISO8601,
 		Params: map[string]string{},
 	}
-	return STATIC_TIME, r, e
+	return staticTime, r, e
 }
 
 func newTestServer(t *testing.T, syslogAddress string) *Server {
@@ -130,8 +127,6 @@ func TestNewEvent(t *testing.T) {
 // TestServeHTTP
 //
 
-var badRequest = http.StatusText(http.StatusBadRequest) + "\n"
-
 var httpTests = []struct {
 	method   string
 	path     string
@@ -139,14 +134,13 @@ var httpTests = []struct {
 	code     int
 	body     string
 }{
-	{"GET", "/", "", 200, TRANSPARENT_1_PX_GIF},
-	{"GET", "/", "a=1&b=2", 200, TRANSPARENT_1_PX_GIF},
-	{"GET", "/", "%gh&%ij", 400, badRequest},
-	{"POST", "/", "", 400, badRequest},
+	{"GET", "/", "", 200, Transparent1PxGIF},
+	{"GET", "/", "a=1&b=2", 200, Transparent1PxGIF},
+	{"GET", "/", "%gh&%ij", 400, BadRequest + "\n"},
+	{"POST", "/", "", 400, BadRequest + "\n"},
 }
 
-func serveRequest(t *testing.T, server *Server, method, path,
-	rawQuery string) *httptest.ResponseRecorder {
+func serveRequest(t *testing.T, server *Server, method, path, rawQuery string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	_, r, _ := emptyEvent(t)
 	r.Method = method
@@ -179,10 +173,10 @@ func TestServeHTTP(t *testing.T) {
 // TestSendUdp
 //
 
-const UDP_MAX_BYTES = 65507
+const UDPMaxBytes = 65507
 
 func extractMessage(packet string) string {
-	match := SYSLOG_REGEX.FindStringSubmatch(packet)
+	match := syslogRegex.FindStringSubmatch(packet)
 	if match == nil {
 		return ""
 	}
@@ -197,7 +191,7 @@ var udpTests = []struct {
 }{
 	{
 		"GET", "/", "a=1&b=2",
-		`{"t":"` + STATIC_ISO8601 + `","params":{"a":"1","b":"2"}}`,
+		`{"t":"` + StaticISO8601 + `","params":{"a":"1","b":"2"}}`,
 	},
 	{
 		"GET", "/", "%gh&%ij", "",
@@ -209,51 +203,47 @@ var udpTests = []struct {
 
 func TestSendUdp(t *testing.T) {
 	var err error
-	var udpaddr *net.UDPAddr
-	var udpconn *net.UDPConn
 
-	udpaddr, err = net.ResolveUDPAddr("udp", "localhost:0")
+	udpaddr, err := net.ResolveUDPAddr("udp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	udpconn, err = net.ListenUDP("udp", udpaddr)
+	udpconn, err := net.ListenUDP("udp", udpaddr)
 	defer udpconn.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	server := newTestServer(t, udpconn.LocalAddr().String())
-	server.now = func() time.Time { return STATIC_TIME }
+	server.now = func() time.Time { return staticTime }
 
-	var numBytes int
-	messageBuf := make([]byte, UDP_MAX_BYTES)
+	messageBuf := make([]byte, UDPMaxBytes)
 
 	for _, udpTest := range udpTests {
-		serveRequest(t, server, udpTest.method, udpTest.path,
-			udpTest.rawQuery)
+		serveRequest(t, server, udpTest.method, udpTest.path, udpTest.rawQuery)
 		udpconn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-		numBytes, _, err = udpconn.ReadFromUDP(messageBuf)
+		numBytes, _, err := udpconn.ReadFromUDP(messageBuf)
 		if err != nil {
 			if udpTest.packet != "" {
 				t.Errorf("Failed to read packet: %v", err)
 			}
-		} else {
-			packet := string(messageBuf[:numBytes])
-			if udpTest.packet == "" {
-				t.Errorf("Expected no packet; received:\n\n    %s", packet)
-				continue
-			}
-
-			actual := extractMessage(packet)
-			if actual == "" {
-				t.Errorf("Failed to parse packet:\n\n    %s", packet)
-			}
-			if udpTest.packet != actual {
-				t.Errorf("Expected:\n\n    %s\n\nReceived:\n\n     %s",
-					udpTest.packet, actual)
-			}
+			// XXX - unlogged error on empty packet
+			continue
+		}
+		packet := string(messageBuf[:numBytes])
+		if udpTest.packet == "" {
+			t.Errorf("Expected no packet; received:\n\n    %s", packet)
+			continue
+		}
+		actual := extractMessage(packet)
+		if actual == "" {
+			t.Errorf("Failed to parse packet:\n\n    %s", packet)
+			continue
+		}
+		if udpTest.packet != actual {
+			t.Errorf("Expected:\n\n    %s\n\nReceived:\n\n     %s", udpTest.packet, actual)
 		}
 	}
 }
