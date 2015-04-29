@@ -26,11 +26,15 @@ type Event struct {
 	// Params are client-supplied event attributes.
 	// Pixel events have params of form map[string]string.
 	// JSON POST events have arbitrary JSON.
-	Params interface{} `json:"params"`
+	Params interface{} `json:"params,omitempty"`
 
 	UserAgent string `json:"ua,omitempty"`
 	IP        string `json:"ip,omitempty"`
 	Proto     string `json:"proto,omitempty"`
+
+	// Error is a server-defined string reporting any error that
+	// occurred while constructing the event, such as parse failures.
+	Error string `json:"error,omitempty"`
 }
 
 const ISO8601_FORMAT = "2006-01-02T15:04:05Z"
@@ -204,14 +208,18 @@ func NewEvent(t time.Time, r *http.Request) (event *Event, err error) {
 		}
 
 		var params interface{}
-		event.Params = &params
-		err = json.Unmarshal(body[:n], event.Params)
+		err = json.Unmarshal(body[:n], &params)
 		if err != nil {
 			break
 		}
+		event.Params = &params
 
 	default:
 		err = fmt.Errorf("Invalid method %s", r.Method)
+	}
+
+	if err != nil {
+		event.Error = err.Error()
 	}
 	return
 }
@@ -236,22 +244,22 @@ func (s *Server) logEvent(event *Event) {
 
 func (s *Server) trackPixel(w http.ResponseWriter, r *http.Request) {
 	event, err := s.parseRequest(w, r)
+	s.logEvent(event)
 	if err != nil {
 		return
 	}
 	w.Header().Set("Content-Type", "image/gif")
 	w.Write(TRANSPARENT_1_PX_GIF_BYTES)
-	s.logEvent(event)
 }
 
 func (s *Server) trackJSON(w http.ResponseWriter, r *http.Request) {
 	event, err := s.parseRequest(w, r)
+	s.logEvent(event)
 	if err != nil {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("{}"))
-	s.logEvent(event)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

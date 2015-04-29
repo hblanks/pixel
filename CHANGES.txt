@@ -10,6 +10,8 @@ Features:
     * Track JSON POST requests
       (such as `curl -d '{"a": "b", "foo": "c"}' http://localhost:8080/`)
       in addition to pixel GET requests.
+    * Track invalid requests, including an error message relating why
+      the request was invalid.
 
 
 0.0.1 (2015-03-24)

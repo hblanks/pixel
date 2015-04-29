@@ -272,10 +272,14 @@ var udpTests = []struct {
 	},
 	// Invalid requests
 	{
-		"GET", "/", "%gh&%ij", "",
+		"GET", "/", "%gh&%ij",
+		`{"t":"` + STATIC_ISO8601 + `",` +
+			`"error":"Malformed query string: invalid URL escape \"%gh\""}`,
 	},
 	{
-		"POST", "/", "a=1&b=2", "",
+		"POST", "/", "a=1&b=2",
+		`{"t":"` + STATIC_ISO8601 + `",` +
+			`"error":"invalid character 'a' looking for beginning of value"}`,
 	},
 }
 
