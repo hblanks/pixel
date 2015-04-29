@@ -181,8 +181,8 @@ var httpTests = []struct {
 	responseBody string
 }{
 	// Valid requests
-	{"GET", "/", "", 200, Transparent1PxGIF},
-	{"GET", "/", "a=1&b=2", 200, Transparent1PxGIF},
+	{"GET", "/", "", 200, string(Transparent1PxGIF)},
+	{"GET", "/", "a=1&b=2", 200, string(Transparent1PxGIF)},
 	{"POST", "/", `{}`, 200, "{}"},
 	{"POST", "/", `{"a": 1, "b": "2"}`, 200, "{}"},
 

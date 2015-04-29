@@ -39,9 +39,9 @@ type Event struct {
 
 const ISO8601Format = "2006-01-02T15:04:05Z"
 
-const Transparent1PxGIF = "\x47\x49\x46\x38\x39\x61\x01\x00" +
+var Transparent1PxGIF = []byte("\x47\x49\x46\x38\x39\x61\x01\x00" +
 	"\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00\x2c\x00\x00\x00\x00" +
-	"\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+	"\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b")
 
 const UDPMaxBytes = 65507
 
@@ -219,7 +219,7 @@ func (s *Server) trackPixel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/gif")
-	w.Write([]byte(Transparent1PxGIF))
+	w.Write(Transparent1PxGIF)
 }
 
 func (s *Server) trackJSON(w http.ResponseWriter, r *http.Request) {
