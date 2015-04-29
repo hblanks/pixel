@@ -11,8 +11,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr,
-		"Usage: %s\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s\n", os.Args[0])
 	fmt.Fprintf(os.Stderr,
 		"Serves analytics HTTP requests; logs to syslog by UDP.\n"+
 			"Relevant environment variables (and defaults):\n"+
@@ -36,15 +35,13 @@ func start() error {
 		syslogAddress = "localhost:514"
 	}
 
-	syslogPriority := pixel.NewSyslogPriority(os.Getenv("SYSLOG_LEVEL"),
-		os.Getenv("SYSLOG_FACILITY"))
+	syslogPriority := pixel.NewSyslogPriority(os.Getenv("SYSLOG_LEVEL"), os.Getenv("SYSLOG_FACILITY"))
 
 	server, err := pixel.NewServer(syslogAddress, syslogPriority)
 	if err != nil {
 		return err
 	}
-	log.Printf("start listen=%s syslog=%s priority=%d\n",
-		listenAddress, syslogAddress, syslogPriority)
+	log.Printf("start listen=%s syslog=%s priority=%d\n", listenAddress, syslogAddress, syslogPriority)
 	go server.ListenAndServe(listenAddress)
 
 	sigChannel := make(chan os.Signal)

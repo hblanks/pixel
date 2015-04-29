@@ -16,7 +16,7 @@ To install for development, just do:
 A directory to simplify debian packaging is forthcoming.
 
 
-## Usage
+## Usage & sample requests
 
 pixel is configured from the environment. A typical invocation might
 be:
@@ -24,7 +24,18 @@ be:
     LISTEN_ADDRESS=:8080 pixel
 
 
-## Quickstart (with nginx)
+pixel serves tracks both pixel GET:
+
+    curl http://localhost:8080/trk/v1.gif?a=b&foo=c
+
+and JSON POST:
+
+    curl -d '{"a": "b", "foo": "c"}' http://localhost:8080/trk/v1
+
+HTTP requests for any path.
+
+
+## Quickstart (configured with nginx)
 
 Configure pixel to run using the supervisor / container of your choice
 (runit, upstart, daemontools, docker, etc.)
@@ -92,6 +103,17 @@ If you do choose to have hourly logs, you may also want to use
 regularly to S3. (Of course, you could also easily forward your logs
 from your local syslog-ng upstream using some TCP/TLS transport.)
 
+
+## Development
+
+`go test ./...` will run all tests.
+
+`LISTEN_ADDRESS=:8080 SYSLOG_ADDRESS=127.0.0.1:5140 pixel` will run
+pixel and have it send UDP packets to 127.0.0.01:5140.
+
+`LISTEN_ADDRESS=127.0.0.1:5140 syslog-receive` (included in this repo)
+will listen on the same syslog IP:port and print UDP packets as they
+come in.
 
 ## A word on log/syslog
 
