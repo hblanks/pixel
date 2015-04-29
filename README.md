@@ -104,6 +104,17 @@ regularly to S3. (Of course, you could also easily forward your logs
 from your local syslog-ng upstream using some TCP/TLS transport.)
 
 
+## Development
+
+`go test ./...` will run all tests.
+
+`LISTEN_ADDRESS=:8080 SYSLOG_ADDRESS=127.0.0.1:5140 pixel` will run
+pixel and have it send UDP packets to 127.0.0.01:5140.
+
+`LISTEN_ADDRESS=127.0.0.1:5140 syslog-receive` (included in this repo)
+will listen on the same syslog IP:port and print UDP packets as they
+come in.
+
 ## A word on log/syslog
 
 Go's `log/syslog` sends messages to syslog in
