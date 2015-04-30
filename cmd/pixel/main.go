@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/hblanks/pixel"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/hblanks/pixel"
 )
 
 func usage() {

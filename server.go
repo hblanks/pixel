@@ -157,21 +157,18 @@ func NewEvent(t time.Time, r *http.Request) (*Event, error) {
 		event.Params = params
 
 	case "POST":
-		var body []byte
-		var n int
-		if r.ContentLength > 0 {
-			if r.ContentLength > PostBodyMaxLen {
-				err = fmt.Errorf("POST body exceeds max length: %d", r.ContentLength)
-				break
-			}
-			body = make([]byte, r.ContentLength)
-		} else if r.ContentLength == -1 {
-			body = make([]byte, PostBodyMaxLen)
-		} else {
+		if r.ContentLength == 0 {
 			err = fmt.Errorf("Empty POST body")
 			break
 		}
+		if r.ContentLength > PostBodyMaxLen {
+			err = fmt.Errorf("POST body exceeds max length: %d", r.ContentLength)
+			break
+		}
 
+		body := make([]byte, PostBodyMaxLen)
+
+		var n int
 		n, err = r.Body.Read(body)
 		if err != nil && err != io.EOF {
 			break

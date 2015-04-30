@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/hblanks/pixel"
 	"log"
 	"net"
 	"os"
+
+	"github.com/hblanks/pixel"
 )
 
 func usage() {
