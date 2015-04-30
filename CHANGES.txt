@@ -3,7 +3,10 @@
 master
 ======
 
-Features:
+0.0.2 (2015-04-30)
+==================
+
+New features:
 
     * Log listen address, syslog address, and syslog priority to stderr
       on startup.
